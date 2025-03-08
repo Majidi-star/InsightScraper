@@ -1,0 +1,8 @@
+# Topics of interest for search and content evaluation
+# One topic per line
+
+Artificial Intelligence
+Machine Learning
+Natural Language Processing
+Robotics
+# Internet of Things  # Disabled 

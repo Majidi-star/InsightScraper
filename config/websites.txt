@@ -1,0 +1,6 @@
+# List of main URLs to crawl
+# One URL per line
+
+https://www.technologyreview.com/
+
+# https://another-site.com/articles  # Disabled 

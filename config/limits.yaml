@@ -1,0 +1,15 @@
+scraping:
+  max_depth: 3
+  max_links_per_page: 3
+  max_candidate_images: 3
+  max_media_per_article: 3
+  request_delay: 2  # Delay between requests in seconds
+
+browser:
+  headless: true
+  timeout: 30  # Wait timeout in seconds
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/123.0"
+
+content:
+  min_article_length: 500  # Minimum character count for an article
+  max_article_length: 5000  # Maximum character count for an article 

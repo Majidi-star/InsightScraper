@@ -1,0 +1,7 @@
+# URLs that should not be crawled
+# One URL per line
+
+https://example.com/login
+https://example.com/register
+https://example.com/contact
+# https://example.com/terms  # Disabled 
