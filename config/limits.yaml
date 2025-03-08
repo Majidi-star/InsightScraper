@@ -1,5 +1,5 @@
 scraping:
-  max_depth: 3
+  max_depth: 2
   max_links_per_page: 3
   max_candidate_images: 3
   max_media_per_article: 3

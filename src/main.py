@@ -11,18 +11,6 @@ from colorama import init, Fore, Back, Style
 import sys 
 import traceback
 
-"""
-
-Evaluate each link based on its relevance to the topics \n\nFor each link, provide a score 
-from 0 to 1, where:\n- 0 means no relevance\n- 1 means perfect relevance\n\nFormat your response 
-strictly as follows:\nlink1: score1,link2: score2,link3: score3\n\nInclude only the evaluated 
-links and their scores. Do not include any explanations or additional text , Given the following 
-topics:\n{topics}\n\nAnd the following links:\n{links}\n\n
-
-"""
-
-
-
 
 # Initialize colorama
 init(autoreset=True)
@@ -99,20 +87,28 @@ class WebScraper:
                 copied_path = self.file_manager.copy_image(image_path, article_dir)
                 if copied_path:
                     final_image_paths.append(copied_path)
-    
-        # Process each link one at a time
+
+        # Collect scores for all links
+        link_scores = []
         for link in links:
             if link not in self.config['exclusions'] and link not in self.evaluated_links:
                 # Evaluate the link individually
                 score = await self.ai_agent.evaluate_link(link, self.config['topics'])
                 logger.info(f"Evaluating link {link}: Score {score}")
+                link_scores.append((link, score))  # Store the link and its score
 
-                # Only process the link if it has a positive score
-                if score > 0.5:
-                    print(Fore.BLUE + f"Visiting link: {link}")
-                    await self.process_page(link, current_depth + 1)
+        # Sort links by score in descending order
+        link_scores.sort(key=lambda x: x[1], reverse=True)
 
+        # Truncate the list based on max_links_per_page
+        max_links_per_page = self.config['limits']['scraping']['max_links_per_page']
+        top_links = link_scores[:min(max_links_per_page, len(link_scores))]
 
+        # Process the top links
+        for link, score in top_links:
+            if score >= 0.5:  # Only process links with a score of 0.5 or higher
+                print(Fore.BLUE + f"Visiting link: {link} with score: {score}")
+                await self.process_page(link, current_depth + 1)
 
     async def run(self):
         """Main program execution"""
