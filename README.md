@@ -117,9 +117,7 @@ Outputs will be saved in the `output` folder, including a summary HTML file that
 
 - Python 3.8+
 - Firefox Browser
-- Ollama با مدل‌های زیر نصب شده:
-  - qwen2.5:latest
-  - llava-llama3:latest
+- Ollama حداقل با یک مدل نصب شده
 
 ## نصب
 
