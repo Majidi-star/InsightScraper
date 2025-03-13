@@ -13,3 +13,6 @@ prompts:
   link_evaluation: "Evaluate the relevance of the given link to the specified topics or categories.\n\nInstructions:\n1. Review the provided link and assess its relevance to the topics or categories.\n2. Assign a single numerical score from 0.0 to 1.0, where:\n   - 0.0: Completely irrelevant\n   - 1.0: Perfectly relevant\n\nStrict response format:\n[score]\n\nGuidelines:\n- Only output the numerical score.\n- Do not include the link, explanations, comments, or additional text.\n\nGiven the following link:\n{url}\n\nAnd the topics or categories:\n{topics}\n\n"
   content_evaluation: "Answer this question with only one word: Yes or No. Evaluate if this content is valuable for these : {topics}. Content: {content}. Answer with only one word: Yes or No."
   article_generation: "Please generate a concise and professional article from this content:\n{content}\n\nRelevant topics: {topics}"
+
+thresholds:
+  link_score: 0.5

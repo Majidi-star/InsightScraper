@@ -39,8 +39,6 @@ class WebScraper:
         # Get content and links
         content, links, _ = await self.scraper.get_page_content(url)  # Ignore images
 
-        links = list(set(links))  # Remove duplicate links
-
         if not content:
             logger.warning(f"Warning: No content found for {url}, but will continue processing links.")
 
@@ -53,18 +51,13 @@ class WebScraper:
             # Generate article if content is valuable
             if is_valuable:
                 article = await self.ai_agent.generate_article(content, self.config['topics'])
-                logger.info(f"\n\nGenerated article for {url}") 
+                logger.info(f"\n\nGenerated article for {url}")  # Log first 100 characters
                 if not article:
                     logger.error(f"Error: Article generation failed for {url}")
-                
-                # Save article if generated
-            if is_valuable and article:
-                title = f"Article from {url}"
-                article_dir = self.file_manager.save_article(title, article, url)
-                logger.info(f"\n\nSaved article for {url}") 
 
         # Collect scores for all links
         link_scores = []
+        link_score_threshold = self.config['model_config']['thresholds']['link_score']  # Fetch threshold from config
         for link in links:
             if link not in self.config['exclusions'] and link not in self.evaluated_links:
                 # Evaluate the link individually
@@ -83,7 +76,7 @@ class WebScraper:
 
         # Process the top links
         for link, score in top_links:
-            if score >= 0.5:  # Only process links with a score of 0.5 or higher
+            if score >= link_score_threshold:  # Use the threshold from the config
                 print(Fore.BLUE + f"Visiting link: {link} with score: {score}")
                 await self.process_page(link, current_depth + 1)
 
