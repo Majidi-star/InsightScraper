@@ -15,7 +15,6 @@ class AIAgent:
         self.model_config = model_config
         self.content_model = model_config['models']['content']['name']
         self.links_model = model_config['models']['links']['name']
-        self.image_model = model_config['models']['images']['name']
         self.prompts = model_config['prompts']
     
     async def evaluate_link(self, url: str, topics: List[str]) -> float:
@@ -73,8 +72,6 @@ class AIAgent:
                 content=content,
                 topics=", ".join(topics)
             )
-
-            print(f"\nThis is the prompt : {prompt[:200]}\n\n")
             
             response = ollama.chat(
                 model=self.content_model,

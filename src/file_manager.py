@@ -4,10 +4,6 @@ import json
 from typing import List, Dict, Any, Optional
 import logging
 from datetime import datetime
-import shutil
-from urllib.parse import urlparse
-import requests
-from PIL import Image
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,16 +12,14 @@ class FileManager:
     def __init__(self, base_dir: str = "output"):
         self.base_dir = Path(base_dir)
         self.articles_dir = self.base_dir / "articles"
-        self.images_dir = self.base_dir / "images"
         self.ensure_directories()
     
     def ensure_directories(self):
         """Ensure required directories exist"""
         self.articles_dir.mkdir(parents=True, exist_ok=True)
-        self.images_dir.mkdir(parents=True, exist_ok=True)
     
-    def save_article(self, title: str, content: str, url: str, images: List[str]) -> str:
-        """Save article and its metadata"""
+    def save_article(self, title: str, content: str, url: str) -> str:
+        """Save article and its metadata without images"""
         try:
             # Create safe filename
             safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).strip()
@@ -41,12 +35,12 @@ class FileManager:
                 f.write(f"# {title}\n\n")
                 f.write(content)
             
-            # Save metadata
+            # Save metadata without images
             metadata = {
                 'title': title,
                 'source_url': url,
                 'timestamp': timestamp,
-                'images': images
+                'images': []  # No images to save
             }
             
             metadata_path = article_dir / "metadata.json"
@@ -57,25 +51,6 @@ class FileManager:
             
         except Exception as e:
             logger.error(f"Error saving article {title}: {str(e)}")
-            return ""
-    
-    def copy_image(self, source_path: str, article_dir: str) -> str:
-        """Copy image to article directory"""
-        try:
-            if not os.path.exists(source_path):
-                return ""
-            
-            image_name = os.path.basename(source_path)
-            dest_path = os.path.join(article_dir, "images", image_name)
-            
-            # Ensure images directory exists
-            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-            
-            shutil.copy2(source_path, dest_path)
-            return dest_path
-            
-        except Exception as e:
-            logger.error(f"Error copying image {source_path}: {str(e)}")
             return ""
     
     def generate_html_summary(self) -> str:
@@ -97,52 +72,50 @@ class FileManager:
                         margin: 0;
                         padding: 20px;
                         background-color: #f5f5f5;
+                        text-align: center;
                     }
                     .container {
-                        max-width: 1200px;
+                        max-width: 800px;
                         margin: 0 auto;
                     }
                     .article {
+                        display: none; /* Hide all articles by default */
                         background: white;
                         border-radius: 8px;
                         padding: 20px;
                         margin-bottom: 20px;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                     }
-                    .article h2 {
-                        color: #2c3e50;
-                        margin-top: 0;
+                    .article.active {
+                        display: block; /* Show the active article */
                     }
-                    .article-meta {
-                        color: #666;
-                        font-size: 0.9em;
-                        margin-bottom: 15px;
+                    button {
+                        padding: 10px 20px;
+                        margin: 5px;
+                        border: none;
+                        border-radius: 5px;
+                        background-color: #3498db;
+                        color: white;
+                        cursor: pointer;
                     }
-                    .article-images {
-                        display: flex;
-                        gap: 10px;
-                        flex-wrap: wrap;
-                        margin-top: 15px;
+                    button:hover {
+                        background-color: #2980b9;
                     }
-                    .article-images img {
-                        max-width: 200px;
-                        border-radius: 4px;
-                    }
-                    a {
-                        color: #3498db;
-                        text-decoration: none;
-                    }
-                    a:hover {
-                        text-decoration: underline;
+                    .article-number {
+                        margin: 20px 0;
+                        font-size: 1.2em;
                     }
                 </style>
             </head>
             <body>
                 <div class="container">
                     <h1>Article Summary</h1>
+                    <div class="article-number" id="articleNumber"></div>
+                    <div id="articles">
             """
             
             # Collect article information
+            articles = []
             for article_dir in sorted(self.articles_dir.glob("*"), reverse=True):
                 if not article_dir.is_dir():
                     continue
@@ -161,34 +134,47 @@ class FileManager:
                 with open(article_path, 'r', encoding='utf-8') as f:
                     article_content = f.read()
                 
-                # Create HTML for article
-                html_content += f"""
-                    <article class="article">
+                # Prepare HTML for each article
+                article_html = f"""
+                    <div class="article" id="article-{len(articles)}">
                         <h2>{metadata['title']}</h2>
-                        <div class="article-meta">
-                            <a href="{metadata['source_url']}" target="_blank">Original Source</a>
-                            | Date: {metadata['timestamp']}
-                        </div>
                         <div class="article-content">
-                            {article_content[:500]}...
+                            {article_content.replace('\n', '<br>')}  <!-- Replace line breaks with <br> -->
                         </div>
+                    </div>
                 """
-                
-                # Add images
-                if metadata['images']:
-                    html_content += '<div class="article-images">'
-                    for image_path in metadata['images']:
-                        if os.path.exists(image_path):
-                            relative_path = os.path.relpath(image_path, str(self.base_dir))
-                            html_content += f'<img src="{relative_path}" alt="Article Image">'
-                    html_content += '</div>'
-                
-                html_content += """
-                    </article>
-                """
+                articles.append(article_html)
             
+            # Add articles to the HTML content
+            for article_html in articles:
+                html_content += article_html
+            
+            # Add navigation buttons and script
             html_content += """
+                    <button id="prevBtn" onclick="changeArticle(-1)">Previous</button>
+                    <button id="nextBtn" onclick="changeArticle(1)">Next</button>
                 </div>
+                <script>
+                    let currentArticle = 0;
+                    const articles = document.querySelectorAll('.article');
+                    const totalArticles = articles.length;
+                    articles[currentArticle].classList.add('active'); // Show the first article
+                    updateArticleNumber();
+
+                    function changeArticle(direction) {
+                        articles[currentArticle].classList.remove('active'); // Hide current article
+                        currentArticle += direction; // Change the current article index
+                        if (currentArticle < 0) currentArticle = totalArticles - 1; // Loop to last article
+                        if (currentArticle >= totalArticles) currentArticle = 0; // Loop to first article
+                        articles[currentArticle].classList.add('active'); // Show new current article
+                        updateArticleNumber();
+                    }
+
+                    function updateArticleNumber() {
+                        document.getElementById('articleNumber').innerText = 
+                            `This is the ${currentArticle + 1} of ${totalArticles} posts`;
+                    }
+                </script>
             </body>
             </html>
             """
@@ -201,33 +187,4 @@ class FileManager:
             
         except Exception as e:
             logger.error(f"Error generating HTML summary: {str(e)}")
-            return ""
-
-    async def download_image(self, image_url: str, output_dir: str, image_name: str = None) -> Optional[str]:
-        """Download and save an image"""
-        try:
-            # Create safe filename if not provided
-            if not image_name:
-                image_name = os.path.basename(urlparse(image_url).path)
-                if not image_name:
-                    image_name = f"image_{hash(image_url)}"
-            
-            # Ensure the correct file extension
-            if not image_name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
-                image_name += '.jpg'  # Default to jpg if no valid extension
-            
-            output_path = os.path.join(output_dir, image_name)
-            
-            # Download image
-            response = requests.get(image_url, timeout=10)
-            response.raise_for_status()  # Raise an error for bad responses
-            
-            # Save image
-            with open(output_path, 'wb') as f:
-                f.write(response.content)
-            
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Error downloading image {image_url}: {str(e)}")
-            return None 
+            return "" 

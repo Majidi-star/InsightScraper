@@ -29,9 +29,6 @@ class Scraper:
     def _setup_driver(self) -> webdriver.Firefox:
         """Set up and initialize Firefox browser"""
         options = Options()
-        if self.browser_config['headless']:
-            options.add_argument('--headless')
-        
         options.add_argument(f'user-agent={self.browser_config["user_agent"]}')
         
         service = Service(GeckoDriverManager().install())
@@ -75,7 +72,7 @@ class Scraper:
             return False
     
     async def get_page_content(self, url: str) -> Tuple[Optional[str], List[str], List[str]]:
-        """Get content, links, and images from a page"""
+        """Get content and links from a page"""
         print('working main scraper ...')
         if url in self.visited_urls:
             print('already visited')
@@ -100,9 +97,6 @@ class Scraper:
             for element in soup.find_all(['script', 'style', 'nav', 'footer', 'header']):
                 element.decompose()
             
-            # Extract text from all elements
-            content = ' '.join([element.get_text().strip() for element in soup.find_all()])
-            
             # Extract links
             links = []
             for a in soup.find_all('a', href=True):
@@ -125,6 +119,22 @@ class Scraper:
             
             # Delay between requests
             await asyncio.sleep(self.limits['scraping']['request_delay'])
+
+            # Extract text from relevant parent tags only
+            relevant_tags = ['article', 'section', 'div', 'main', 'header', 'footer', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
+            extracted_texts = set()  # Use a set to avoid duplicates
+            
+            for element in soup.find_all(relevant_tags):
+                # Check if the element is a child of any tags in the relevant_tags list
+                if not any(parent.name in relevant_tags for parent in element.parents):
+                    # Only extract text from parent elements
+                    text = element.get_text(strip=True)  # Get the text without leading/trailing spaces
+                    if text:  # Only add non-empty text
+                        # Check if the text is already in the set
+                        if text not in extracted_texts:
+                            extracted_texts.add(text + '\n')  # Add unique text to the set with a newline
+
+            content = ''.join(extracted_texts)  # Join with newlines for better readability
             
             return content, links, images
             

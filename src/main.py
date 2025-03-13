@@ -37,14 +37,13 @@ class WebScraper:
         print(Fore.BLUE + f"Visiting page: {url} at depth {current_depth}")
         
         # Get content and links
-        content, links, images = await self.scraper.get_page_content(url)
+        content, links, _ = await self.scraper.get_page_content(url)  # Ignore images
 
-        print(f"\n\nimages and links: {len(images)} and {len(links)} \n\n")
+        links = list(set(links))  # Remove duplicate links
 
-        # Log if no content is found but continue processing links
         if not content:
             logger.warning(f"Warning: No content found for {url}, but will continue processing links.")
-        
+
         # Evaluate content if it exists
         is_valuable = False
         if content:
@@ -54,39 +53,15 @@ class WebScraper:
             # Generate article if content is valuable
             if is_valuable:
                 article = await self.ai_agent.generate_article(content, self.config['topics'])
-                logger.info(f"\n\nGenerated article for {url}")  # Log first 100 characters
+                logger.info(f"\n\nGenerated article for {url}") 
                 if not article:
                     logger.error(f"Error: Article generation failed for {url}")
-
-        # Process images
-        selected_images = []
-        if is_valuable: 
-            for image_url in images:
-                print(image_url)
-                # Download image with a name connected to the article
-                image_name = f"{urlparse(url).netloc}_{len(selected_images)}.jpg"  # Example naming convention
-                image_path = await self.file_manager.download_image(
-                    image_url,
-                    str(self.file_manager.images_dir),
-                    image_name=image_name  # Pass the image name to the download function
-                )
-                if not image_path:
-                    continue
                 
-                # Just append the image path to selected_images without evaluation
-                selected_images.append(image_path)
-        
-        # Save article if generated
-        if is_valuable and article:
-            title = f"Article from {urlparse(url).netloc}"
-            article_dir = self.file_manager.save_article(title, article, url, selected_images)
-            
-            # Copy images to article directory
-            final_image_paths = []
-            for image_path in selected_images:
-                copied_path = self.file_manager.copy_image(image_path, article_dir)
-                if copied_path:
-                    final_image_paths.append(copied_path)
+                # Save article if generated
+            if is_valuable and article:
+                title = f"Article from {url}"
+                article_dir = self.file_manager.save_article(title, article, url)
+                logger.info(f"\n\nSaved article for {url}") 
 
         # Collect scores for all links
         link_scores = []
@@ -102,7 +77,9 @@ class WebScraper:
 
         # Truncate the list based on max_links_per_page
         max_links_per_page = self.config['limits']['scraping']['max_links_per_page']
-        top_links = link_scores[:min(max_links_per_page, len(link_scores))]
+        top_links = link_scores[:max_links_per_page]
+
+        self.evaluated_links.add(url)  # Add the current link to the evaluated links
 
         # Process the top links
         for link, score in top_links:
@@ -124,8 +101,15 @@ class WebScraper:
             
         except Exception as e:
             print(Fore.RED + f"Error running program: {str(e)}")
+            traceback.print_exc()
         finally:
             self.scraper.cleanup()
+
+    def _is_valid_url(self, url: str, base_url: str) -> bool:
+        """Check if URL is valid"""
+        if not url:
+            return False
+        # Additional logic...
 
 async def main():
     scraper = WebScraper()
