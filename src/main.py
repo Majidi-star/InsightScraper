@@ -39,6 +39,8 @@ class WebScraper:
         # Get content and links
         content, links, _ = await self.scraper.get_page_content(url)  # Ignore images
 
+        links = list(set(links))  # Remove duplicates from links
+
         if not content:
             logger.warning(f"Warning: No content found for {url}, but will continue processing links.")
 
@@ -54,6 +56,13 @@ class WebScraper:
                 logger.info(f"\n\nGenerated article for {url}")  # Log first 100 characters
                 if not article:
                     logger.error(f"Error: Article generation failed for {url}")
+                else : 
+                    title = f"Article for {url}"
+                    saved_path = self.file_manager.save_article(title, article, url)
+                    if saved_path:
+                        logger.info(f"Article saved successfully at {saved_path}")
+                    else:
+                        logger.error(f"Failed to save article for {url}")
 
         # Collect scores for all links
         link_scores = []
@@ -83,6 +92,10 @@ class WebScraper:
     async def run(self):
         """Main program execution"""
         try:
+            # Remove files inside the articles directory
+            for file in self.file_manager.articles_dir.glob('*'):
+                if file.is_file():
+                    file.unlink()
             # Process all main websites
             for website in self.config['websites']:
                 await self.process_page(website, 0)

@@ -107,15 +107,6 @@ class Scraper:
             
             # Extract images
             images = []
-            for img in soup.find_all('img', src=True):
-                src = img['src']
-                if src.startswith('data:'):  # Skip base64 images
-                    continue
-                full_url = urljoin(url, src)
-                if self._is_valid_url_without_domain_check(full_url):
-                    images.append(full_url)
-
-            print(f"\n\nImages length : {len(images)}\n\n")
             
             # Delay between requests
             await asyncio.sleep(self.limits['scraping']['request_delay'])
