@@ -4,6 +4,7 @@ import json
 from typing import List, Dict, Any, Optional
 import logging
 from datetime import datetime
+import markdown
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -85,6 +86,7 @@ class FileManager:
                         padding: 20px;
                         margin-bottom: 20px;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        text-align: left;
                     }
                     .article.active {
                         display: block; /* Show the active article */
@@ -104,6 +106,39 @@ class FileManager:
                     .article-number {
                         margin: 20px 0;
                         font-size: 1.2em;
+                    }
+                    .article-content {
+                        margin-top: 20px;
+                    }
+                    .article-content h1, .article-content h2, .article-content h3 {
+                        color: #2c3e50;
+                    }
+                    .article-content ul, .article-content ol {
+                        padding-left: 20px;
+                    }
+                    .article-content a {
+                        color: #3498db;
+                        text-decoration: none;
+                    }
+                    .article-content a:hover {
+                        text-decoration: underline;
+                    }
+                    .article-content blockquote {
+                        border-left: 4px solid #3498db;
+                        padding-left: 15px;
+                        margin-left: 0;
+                        color: #7f8c8d;
+                    }
+                    .article-content code {
+                        background-color: #f0f0f0;
+                        padding: 2px 4px;
+                        border-radius: 3px;
+                    }
+                    .article-content pre {
+                        background-color: #f0f0f0;
+                        padding: 10px;
+                        border-radius: 5px;
+                        overflow-x: auto;
                     }
                 </style>
             </head>
@@ -134,12 +169,15 @@ class FileManager:
                 with open(article_path, 'r', encoding='utf-8') as f:
                     article_content = f.read()
                 
+                # Convert markdown to HTML
+                html_content_converted = markdown.markdown(article_content, extensions=['extra'])
+                
                 # Prepare HTML for each article
                 article_html = f"""
                     <div class="article" id="article-{len(articles)}">
                         <h2>{metadata['title']}</h2>
                         <div class="article-content">
-                            {article_content.replace('\n', '<br>')}  <!-- Replace line breaks with <br> -->
+                            {html_content_converted}
                         </div>
                     </div>
                 """

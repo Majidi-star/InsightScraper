@@ -52,11 +52,13 @@ class WebScraper:
             
             # Generate article if content is valuable
             if is_valuable:
+                print("\n\nis valuable ..................\n\n")
                 article = await self.ai_agent.generate_article(content, self.config['topics'])
                 logger.info(f"\n\nGenerated article for {url}")  # Log first 100 characters
                 if not article:
                     logger.error(f"Error: Article generation failed for {url}")
                 else : 
+                    print("\n\narticle is getting saved ...................\n\n")
                     title = f"Article for {url}"
                     saved_path = self.file_manager.save_article(title, article, url)
                     if saved_path:
@@ -81,13 +83,14 @@ class WebScraper:
         max_links_per_page = self.config['limits']['scraping']['max_links_per_page']
         top_links = link_scores[:max_links_per_page]
 
-        # Add the current link to the evaluated links and exclusion links
-        self.evaluated_links.add(url)  
-        if url not in self.config['websites']:
-            exclusions_file = self.config_dir / "exclusions.txt"
-            with open(exclusions_file, 'a', encoding='utf-8') as f:
-                f.write(url + '\n')
-            logger.info(f"Added {url} to exclusions.txt as it is not in websites.txt")
+        # # Add the current link to the evaluated links and exclusion links
+        # self.evaluated_links.add(url)  
+        # if url not in self.config['websites']:
+        #     # self.config['exclusions'].add(url)
+        #     exclusions_file = self.config_dir / "exclusions.txt"
+        #     with open(exclusions_file, 'a', encoding='utf-8') as f:
+        #         f.write(url + '\n')
+        #     logger.info(f"Added {url} to exclusions.txt as it is not in websites.txt")
 
         # Process the top links
         for link, score in top_links:

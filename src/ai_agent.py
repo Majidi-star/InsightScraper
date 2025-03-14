@@ -57,8 +57,8 @@ class AIAgent:
                 messages=[{'role': 'user', 'content': prompt}]
             )
             
-            response_text = response['message']['content'].lower()
-            is_valuable = 'yes' in response_text
+            response_text = response['message']['content'].lower().strip()
+            is_valuable = response_text in ['yes', 'y', 'true', '1']
             return is_valuable, response['message']['content']
             
         except Exception as e:
