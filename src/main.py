@@ -10,6 +10,7 @@ import os
 from colorama import init, Fore, Back, Style
 import sys 
 import traceback
+import threading
 
 
 # Initialize colorama
@@ -52,13 +53,11 @@ class WebScraper:
             
             # Generate article if content is valuable
             if is_valuable:
-                print("\n\nis valuable ..................\n\n")
                 article = await self.ai_agent.generate_article(content, self.config['topics'])
                 logger.info(f"\n\nGenerated article for {url}")  # Log first 100 characters
                 if not article:
                     logger.error(f"Error: Article generation failed for {url}")
                 else : 
-                    print("\n\narticle is getting saved ...................\n\n")
                     title = f"Article for {url}"
                     saved_path = self.file_manager.save_article(title, article, url)
                     if saved_path:
@@ -101,6 +100,11 @@ class WebScraper:
     async def run(self):
         """Main program execution"""
         try:
+            def run_ollama_server():
+                import os
+                os.system('ollama serve')
+
+            threading.Thread(target=run_ollama_server, daemon=True).start()
             # Remove files inside the articles directory
             for file in self.file_manager.articles_dir.glob('*'):
                 if file.is_file():
